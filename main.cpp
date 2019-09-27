@@ -1,5 +1,6 @@
 /*  Copyright 2019 Anastasiia Terenteva  */
 
+#include <iostream>
 #include "./utf8_converter.h"
 
 const std::vector<uint8_t> kUTF8String = {
@@ -23,12 +24,14 @@ void test_utf32_to_utf8() {
   std::vector<uint8_t> result =
     UTF8Converter::utf32_to_utf8(kUTF32String);
   assert(kUTF8String == result);
+  std::cout << "Test UTF32 to UTF8: OK" << '\n';
 }
 
 void test_utf32_from_utf8() {
   std::vector<uint32_t> result =
     UTF8Converter::utf32_from_utf8(kUTF8String);
   assert(kUTF32String == result);
+  std::cout << "Test UTF8 to UTF32: OK" << '\n';
 }
 
 int main() {
