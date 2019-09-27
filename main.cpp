@@ -20,6 +20,22 @@ const std::vector<uint32_t> kUTF32String = {
   0x43c, 0x438, 0x437, 0x43c, 0x430, 0xa
 };
 
+const std::vector<uint8_t> kCorruptedFirstByte = {
+  0b01110100, 0b11100101
+};
+
+const std::vector<uint8_t> kCorruptedSecondaryByte = {
+  0b11010000, 0b11111100,
+};
+
+const std::vector<uint8_t> kNotEnoughSecondaryBytes = {
+  0b11010000, 0b01110100
+};
+
+const std::vector<uint32_t> kTooBigUTF32Symbol = {
+  0xffffffff
+};
+
 void test_utf32_to_utf8() {
   std::vector<uint8_t> result =
     UTF8Converter::utf32_to_utf8(kUTF32String);
@@ -34,8 +50,56 @@ void test_utf32_from_utf8() {
   std::cout << "Test UTF8 to UTF32: OK" << '\n';
 }
 
+void test_corrupted_first_byte_utf8() {
+  try {
+    auto result = UTF8Converter::utf32_from_utf8(kCorruptedFirstByte);
+  }
+  catch (const std::exception& e) {
+    assert(e.what() == std::string("Corrupted UTF8 string!"));
+  }
+
+  std::cout << "Test corrupted first byte UTF8: OK" << '\n';
+}
+
+void test_corrupted_secondary_byte_utf8() {
+  try {
+    auto result = UTF8Converter::utf32_from_utf8(kCorruptedSecondaryByte);
+  }
+  catch (const std::exception& e) {
+    assert(e.what() == std::string("Corrupted UTF8 string!"));
+  }
+
+  std::cout << "Test corrupted secondary byte UTF8: OK" << '\n';
+}
+
+void test_not_enough_secondary_bytes_utf8() {
+  try {
+    auto result = UTF8Converter::utf32_from_utf8(kNotEnoughSecondaryBytes);
+  }
+  catch (const std::exception& e) {
+    assert(e.what() == std::string("Corrupted UTF8 string!"));
+  }
+
+  std::cout << "Test not enough secondary bytes UTF8: OK" << '\n';
+}
+
+void test_too_big_utf32_symbol() {
+  try {
+    auto result = UTF8Converter::utf32_to_utf8(kTooBigUTF32Symbol);
+  }
+  catch (const std::exception& e) {
+    assert(e.what() == std::string("Corrupted UTF32 string!"));
+  }
+
+  std::cout << "Test too big UTF32 symbol: OK" << '\n';
+}
+
 int main() {
   test_utf32_to_utf8();
   test_utf32_from_utf8();
+  test_corrupted_first_byte_utf8();
+  test_corrupted_secondary_byte_utf8();
+  test_not_enough_secondary_bytes_utf8();
+  test_too_big_utf32_symbol();
   return 0;
 }

@@ -38,7 +38,7 @@ std::vector<uint8_t> UTF8Converter::utf32_to_utf8(
     for (; n_bytes < kMaxBytes && wide_char > kLastCodePoints[n_bytes];
         n_bytes++) {}
     if (n_bytes > kMaxBytes) {
-      throw std::runtime_error("The value bigger then UTF32 symbol!");;
+      throw std::runtime_error("Corrupted UTF32 string!");;
     }
 
     byte = kFirstByteMask[n_bytes];
@@ -66,6 +66,13 @@ static int secondary_byte_correct(uint8_t byte) {
   return (byte >> kSecondaryByteCap) == 2;
 }
 
+static int first_byte_correct(uint8_t byte, int index) {
+  int first_byte_cap = kBitsForCodePoint[index] -
+    index * kSecondaryByteCap;
+
+  return (byte >> first_byte_cap) == (kFirstByteMask[index] >> first_byte_cap);
+}
+
 std::vector<uint32_t> UTF8Converter::utf32_from_utf8(
     const std::vector<uint8_t> &x) {
 
@@ -79,6 +86,10 @@ std::vector<uint32_t> UTF8Converter::utf32_from_utf8(
     /* Serching for the number of bytes the wide_char should reside. */
     for (; n_bytes < kMaxBytes && byte > kFirstByteMask[n_bytes]; n_bytes++) {}
     n_bytes--;
+
+    if (!first_byte_correct(byte, n_bytes)) {
+        throw std::runtime_error("Corrupted UTF8 string!");
+    }
 
     int first_byte_cap = kBitsForCodePoint[n_bytes] -
       n_bytes * kSecondaryByteCap;
