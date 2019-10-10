@@ -2,6 +2,7 @@
 
 #include "./utf8_converter.h"
 #include <iostream>
+#include <sstream>
 
 static const std::vector<uint32_t> kLastCodePoints = {
   0x7f, 0x7ff, 0xffff, 0x1ffff, 0x3ffffff, 0x7fffffff
@@ -37,8 +38,12 @@ std::vector<uint8_t> UTF8Converter::utf32_to_utf8(
     /* Searching for the number of bytes our symbol should reside. */
     for (; n_bytes < kMaxBytes && wide_char > kLastCodePoints[n_bytes];
         n_bytes++) {}
-    if (n_bytes > kMaxBytes) {
-      throw std::runtime_error("Corrupted UTF32 string!");;
+    if (n_bytes >= kMaxBytes) {
+      std::stringstream err;
+      err << "Error at symbol " << std::hex << wide_char << ": " <<
+          "the largest supported UTF32 symbol is " << std::hex <<
+          kLastCodePoints[kMaxBytes - 1];
+      throw std::runtime_error(err.str());
     }
 
     byte = kFirstByteMask[n_bytes];
@@ -88,7 +93,10 @@ std::vector<uint32_t> UTF8Converter::utf32_from_utf8(
     n_bytes--;
 
     if (!first_byte_correct(byte, n_bytes)) {
-        throw std::runtime_error("Corrupted UTF8 string!");
+      std::stringstream err;
+      err << "Error at symbol " << unsigned(byte) << ": " <<
+          "invalid first byte.";
+      throw std::runtime_error(err.str());
     }
 
     int first_byte_cap = kBitsForCodePoint[n_bytes] -
@@ -99,12 +107,15 @@ std::vector<uint32_t> UTF8Converter::utf32_from_utf8(
       /* Moving to the next UTF8 byte. */
       it++;
       if (it == x.end()) {
-        throw std::runtime_error("Corrupted UTF8 string!");
+        throw std::runtime_error("The string ended unexpectedly.");
       }
 
       byte = *it;
       if (!secondary_byte_correct(byte)) {
-        throw std::runtime_error("Corrupted UTF8 string!");
+        std::stringstream err;
+        err << "Error at symbol " << unsigned(byte) << ": " <<
+            "invalid secondary byte.";
+        throw std::runtime_error(err.str());
       }
 
       wide_char = wide_char << kSecondaryByteCap;

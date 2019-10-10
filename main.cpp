@@ -1,6 +1,7 @@
 /*  Copyright 2019 Anastasiia Terenteva  */
 
 #include <iostream>
+#include <sstream>
 #include "./utf8_converter.h"
 
 const std::vector<uint8_t> kUTF8String = {
@@ -21,7 +22,7 @@ const std::vector<uint32_t> kUTF32String = {
 };
 
 const std::vector<uint8_t> kCorruptedFirstByte = {
-  0b01110100, 0b11100101
+  0b11111111,
 };
 
 const std::vector<uint8_t> kCorruptedSecondaryByte = {
@@ -29,7 +30,7 @@ const std::vector<uint8_t> kCorruptedSecondaryByte = {
 };
 
 const std::vector<uint8_t> kNotEnoughSecondaryBytes = {
-  0b11010000, 0b01110100
+  0b11010000
 };
 
 const std::vector<uint32_t> kTooBigUTF32Symbol = {
@@ -37,59 +38,89 @@ const std::vector<uint32_t> kTooBigUTF32Symbol = {
 };
 
 void test_utf32_to_utf8() {
-  std::vector<uint8_t> result =
-    UTF8Converter::utf32_to_utf8(kUTF32String);
+  auto result = UTF8Converter::utf32_to_utf8(kUTF32String);
   assert(kUTF8String == result);
   std::cout << "Test UTF32 to UTF8: OK" << '\n';
 }
 
 void test_utf32_from_utf8() {
-  std::vector<uint32_t> result =
-    UTF8Converter::utf32_from_utf8(kUTF8String);
+  auto result = UTF8Converter::utf32_from_utf8(kUTF8String);
   assert(kUTF32String == result);
   std::cout << "Test UTF8 to UTF32: OK" << '\n';
 }
 
 void test_corrupted_first_byte_utf8() {
+  bool exception_thrown = false;
+
   try {
     auto result = UTF8Converter::utf32_from_utf8(kCorruptedFirstByte);
   }
   catch (const std::exception& e) {
-    assert(e.what() == std::string("Corrupted UTF8 string!"));
+    exception_thrown = true;
+
+    std::stringstream err;
+    err << "Error at symbol " << unsigned(kCorruptedFirstByte[0]) << ": " <<
+        "invalid first byte.";
+
+    assert(e.what() == err.str());
   }
+
+  assert(exception_thrown);
 
   std::cout << "Test corrupted first byte UTF8: OK" << '\n';
 }
 
 void test_corrupted_secondary_byte_utf8() {
+  bool exception_thrown = false;
   try {
     auto result = UTF8Converter::utf32_from_utf8(kCorruptedSecondaryByte);
   }
   catch (const std::exception& e) {
-    assert(e.what() == std::string("Corrupted UTF8 string!"));
+    exception_thrown = true;
+
+    std::stringstream err;
+    err << "Error at symbol " << unsigned(kCorruptedSecondaryByte[1]) <<
+      ": invalid secondary byte.";
+
+    assert(e.what() == err.str());
   }
+
+  assert(exception_thrown);
 
   std::cout << "Test corrupted secondary byte UTF8: OK" << '\n';
 }
 
 void test_not_enough_secondary_bytes_utf8() {
+  bool exception_thrown = false;
   try {
     auto result = UTF8Converter::utf32_from_utf8(kNotEnoughSecondaryBytes);
   }
   catch (const std::exception& e) {
-    assert(e.what() == std::string("Corrupted UTF8 string!"));
+    exception_thrown = true;
+    assert(e.what() == std::string("The string ended unexpectedly."));
   }
+
+  assert(exception_thrown);
 
   std::cout << "Test not enough secondary bytes UTF8: OK" << '\n';
 }
 
 void test_too_big_utf32_symbol() {
+  bool exception_thrown = false;
   try {
     auto result = UTF8Converter::utf32_to_utf8(kTooBigUTF32Symbol);
   }
   catch (const std::exception& e) {
-    assert(e.what() == std::string("Corrupted UTF32 string!"));
+    exception_thrown = true;
+
+    std::stringstream err;
+    err << "Error at symbol " << std::hex << kTooBigUTF32Symbol[0] << ": " <<
+        "the largest supported UTF32 symbol is 7fffffff";
+
+    assert(e.what() == err.str());
   }
+
+  assert(exception_thrown);
 
   std::cout << "Test too big UTF32 symbol: OK" << '\n';
 }
